@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+"
+
 contract DecentNews {
     mapping(bytes32 => address) articleCreator; //Creator of Article
     mapping(address => bool) isApproved; //User allowed to publish article
@@ -23,7 +25,6 @@ contract DecentNews {
         uint256 score;
         address[] reviewee;
         mapping(address => bool) voteOfParticipant;
-        uint256 finalScore;
         bool finished;
     }
 
@@ -77,13 +78,20 @@ contract DecentNews {
         if( articleReviewState[assignedArticle].voteCount > reviewsNeeded){
             finalizeVoting(assignedArticle);
         }
-
+        articleReviewState[assignedArticle].reviewee.push(msg.sender);
         assignedArticleReviewer[msg.sender] = bytes32(0);
     }
 
 
     function finalizeVoting(bytes32 _hash) internal {
-        
+        articleReviewState[_hash].finished = true;
+
+        if(articleReviewState[_hash].score > minimumScoreToApprove){
+            emit articleApproved(_hash);
+            stateOfArticle[_hash] = ArticleState.Approved;
+        }else{
+            stateOfArticle[_hash] = ArticleState.Approved;
+        }
     }
 
 
