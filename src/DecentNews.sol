@@ -15,7 +15,7 @@ contract DecentNews is Ownable {
 
     //Review
     mapping(address => bytes32) assignedArticleReviewer;
-    mapping(bytes32 => pendingArticle) articleReviewState; //every positive review count increases by 1
+    mapping(bytes32 => pendingArticle) public articleReviewState; //every positive review count increases by 1
 
     //Payment
     mapping(address => int256) userFunds;
@@ -77,6 +77,7 @@ contract DecentNews is Ownable {
         //requestRandomNumber
         uint256 maxNumber = pendingArticles.length; //0 - maxNumber = randomNumber
         uint256 indexOfRandomArticle = randomNumber(maxNumber);
+        if(indexOfRandomArticle > 0) indexOfRandomArticle --;
         assignedArticleReviewer[msg.sender] = pendingArticles[indexOfRandomArticle];
 
         emit reviewAssigned(msg.sender, pendingArticles[indexOfRandomArticle]);
@@ -96,7 +97,7 @@ contract DecentNews is Ownable {
         }
         articleReviewState[assignedArticle].voteCount++;
 
-        if( articleReviewState[assignedArticle].voteCount > reviewsNeeded){
+        if( articleReviewState[assignedArticle].voteCount >= reviewsNeeded){
             finalizeVoting(assignedArticle);
         }
         articleReviewState[assignedArticle].reviewee.push(msg.sender);
@@ -106,7 +107,13 @@ contract DecentNews is Ownable {
 
     function finalizeVoting(bytes32 _hash) internal {
         articleReviewState[_hash].finished = true;
-
+        // Delete from pending Reviews
+        uint256 indexHash = indexOfArticlePending[_hash];
+        if(pendingArticles.length > 1){
+            pendingArticles[indexHash] = pendingArticles[pendingArticles.length - 1];
+        }
+        pendingArticles.pop();
+        
         if(articleReviewState[_hash].score > minimumScoreToApprove){
             emit articleApproved(_hash);
             stateOfArticle[_hash] = ArticleState.Approved;

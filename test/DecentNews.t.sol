@@ -146,11 +146,37 @@ contract DecentNewsTestAfterTenReviews is Test {
     DecentNews public decentNews;
 
     function setUp() public {
+
         decentNews = new DecentNews();
         decentNews.stake{value: 0.05 ether}();
         decentNews.createArticle(bytes32(uint(1)));
-        decentNews.requestReview();
-         decentNews.submitVote(true);
+
+        address[10] memory users = [
+                address(0xE1),
+                address(0xE2),
+                address(0xE3),
+                address(0xE4),
+                address(0xE5),
+                address(0xE6),
+                address(0xE7),
+                address(0xE8),
+                address(0xE9),
+                address(0xE10)
+        ];
+        // for(uint256 i; i < users.length; i++){
+        //     hoax(users[i], 10 ether);
+        // }
+        //@todo add userList
+        for(uint256 i; i < 10; i++){
+            //vm.startPrank(users[i]); 
+            //decentNews.stake{value: 0.05 ether}();
+            decentNews.requestReview();
+            decentNews.submitVote(true);
+            //assertEq(decentNews.articleReviewState(bytes32(uint(1)))[score] == i);
+            //vm.stopPrank();
+        }
+        
+       
     }
 
     function test_publishArticle(bytes32 _hash) public {
@@ -159,12 +185,13 @@ contract DecentNewsTestAfterTenReviews is Test {
     }
     
     function test_reviewArticle() public {
-        vm.expectRevert("User already has review assigned");
+        vm.expectRevert("No article available for review");
         decentNews.requestReview();
     }
 
     function test_submitVote(bool validArticle) public {
         //@todo should work
+        vm.expectRevert("No article assigned");
         decentNews.submitVote(validArticle);
     }
     
