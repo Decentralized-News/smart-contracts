@@ -18,7 +18,7 @@ contract DecentNews is Ownable {
     mapping(bytes32 => pendingArticle) articleReviewState; //every positive review count increases by 1
 
     //Payment
-    mapping(address => uint256) userFunds;
+    mapping(address => int256) userFunds;
     bytes32[] public pendingArticles;
 
     //MVP Earnings set
@@ -29,8 +29,8 @@ contract DecentNews is Ownable {
 
     uint256 reviewsNeeded = 10; //10 reviews needed
     uint256 minimumScoreToApprove = 5; //minimum five votes in order for article to be improved
+    uint256 amountNeededToParticipate = 0.01 ether;
     uint256 randNonce;
-
 
     struct pendingArticle {
         uint256 voteCount;
@@ -52,6 +52,12 @@ contract DecentNews is Ownable {
     event articleCreated(bytes32);
     event reviewAssigned(address indexed, bytes32);
     event rewardsCalculated(address indexed, int256);
+    event Withdrawal(address indexed, uint256);
+   
+    //MVP everything already set
+    constructor() payable {
+
+    }
 
     function createArticle(bytes32 _hash) external {
         require(isApproved[msg.sender], "User not allowed to create Articles");
@@ -150,12 +156,45 @@ contract DecentNews is Ownable {
                 ++y;
             }
         }
-
+        userFunds[msg.sender] += rewards;
         // Emit an event with the calculated rewards (assuming you have this event defined)
         emit rewardsCalculated(msg.sender, rewards);
     }
 
+    function withdraw(uint256 _amount) external {
+        calculateReward();
+        int256 amount = userFunds[msg.sender];
+        // Ensure that the user has funds to withdraw
+        require(amount > 0, "No funds available to withdraw");
+        require(uint256(amount) - _amount > 0);
+        uint256 remainingAmount = uint256(amount) - _amount;
+        if(remainingAmount < amountNeededToParticipate){
+            require(checkIfWithdrawAllowed(), "pending reviews, withdraw not possible");
+            isApproved[msg.sender] = false;
+        }
+        // Set the user's funds to 0
+        userFunds[msg.sender] = 0;
 
+        // Transfer the funds to the user
+        payable(msg.sender).transfer(uint256(amount));
+        // Optionally, you can emit an event to log the withdrawal
+        emit Withdrawal(msg.sender, uint256(amount));
+    }
+
+    function stake() external payable{
+        require(msg.value > amountNeededToParticipate, "Not enough funds");
+        //@todo Overflow??
+        userFunds[msg.sender] += int256(msg.value);
+        isApproved[msg.sender] = true;
+    }
+
+    function checkIfWithdrawAllowed() internal view returns (bool) {
+        if(articlesReviewed[msg.sender].length == 0 && articlesCreated[msg.sender].length ==0, "review pending withdraw not possible"){
+            return true;
+        }
+        return false;
+
+    }
 
     //Will be replaced with Chainlink
      function randomNumber(uint _modulus) internal virtual returns (uint) {
