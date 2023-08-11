@@ -150,7 +150,6 @@ contract DecentNewsTestAfterTenReviews is Test {
         decentNews = new DecentNews();
         decentNews.stake{value: 0.05 ether}();
         decentNews.createArticle(bytes32(uint(1)));
-
         address[10] memory users = [
                 address(0xE1),
                 address(0xE2),
@@ -178,6 +177,10 @@ contract DecentNewsTestAfterTenReviews is Test {
         
        
     }
+    // function test_articleFinsished() public {
+    //     //@todo test for event
+    //     decentNews.withdraw(10);
+    // }
 
     function test_publishArticle(bytes32 _hash) public {
        //@todo test for events

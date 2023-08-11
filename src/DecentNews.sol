@@ -18,7 +18,7 @@ contract DecentNews is Ownable {
     mapping(bytes32 => pendingArticle) public articleReviewState; //every positive review count increases by 1
 
     //Payment
-    mapping(address => int256) userFunds;
+    mapping(address => int256) public userFunds;
     bytes32[] public pendingArticles;
 
     //MVP Earnings set
@@ -27,8 +27,8 @@ contract DecentNews is Ownable {
     int256 reductionPerDeclinedArticle = 0.01 ether;
     int256 earningsFalseReview = -0.001 ether;
 
-    uint256 reviewsNeeded = 10; //10 reviews needed
-    uint256 minimumScoreToApprove = 5; //minimum five votes in order for article to be improved
+    uint256 reviewsNeeded = 3; //3 for testing 10 reviews needed
+    uint256 minimumScoreToApprove = 1; //minimum five votes in order for article to be improved
     uint256 amountNeededToParticipate = 0.01 ether;
     uint256 randNonce;
 
@@ -168,25 +168,28 @@ contract DecentNews is Ownable {
         emit rewardsCalculated(msg.sender, rewards);
     }
 
-    function withdraw(uint256 _amount) external {
-        calculateReward();
-        int256 amount = userFunds[msg.sender];
-        // Ensure that the user has funds to withdraw
-        require(amount > 0, "No funds available to withdraw");
-        require(uint256(amount) - _amount > 0);
-        uint256 remainingAmount = uint256(amount) - _amount;
-        if(remainingAmount < amountNeededToParticipate){
-            require(checkIfWithdrawAllowed(), "pending reviews, withdraw not possible");
-            isApproved[msg.sender] = false;
-        }
-        // Set the user's funds to 0
-        userFunds[msg.sender] = 0;
+function withdraw(uint256 _amount) external {
+    calculateReward();
+    int256 totalFunds = userFunds[msg.sender];
+    require(totalFunds >= 0, "No funds available to withdraw");
+    require(_amount > 0 && uint256(totalFunds) >= _amount, "Invalid withdrawal amount");
 
-        // Transfer the funds to the user
-        payable(msg.sender).transfer(uint256(amount));
-        // Optionally, you can emit an event to log the withdrawal
-        emit Withdrawal(msg.sender, uint256(amount));
+    uint256 remainingAmount = uint256(totalFunds) - _amount;
+    if (remainingAmount < amountNeededToParticipate) {
+        require(checkIfWithdrawAllowed(), "Pending reviews, withdraw not possible");
+        isApproved[msg.sender] = false;
     }
+
+    // Update the user's funds
+    userFunds[msg.sender] = int256(remainingAmount);
+
+    // Transfer the requested amount to the user
+    payable(msg.sender).transfer(_amount);
+
+    // Optionally, you can emit an event to log the withdrawal
+    emit Withdrawal(msg.sender, _amount);
+}
+
 
     function stake() external payable{
         require(msg.value > amountNeededToParticipate, "Not enough funds");
