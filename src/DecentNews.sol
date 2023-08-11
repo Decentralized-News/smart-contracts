@@ -4,8 +4,12 @@ pragma solidity 0.8.19;
 "
 
 contract DecentNews {
-    mapping(bytes32 => address) articleCreator; //Creator of Article
     mapping(address => bool) isApproved; //User allowed to publish article
+    mapping(address => bytes32[]) articlesReviewed;
+    mapping(address => bytes32[])articlesCreated;
+
+    //Creation
+    mapping(bytes32 => address) articleCreator; //Creator of Article
     mapping(bytes32 => uint) indexOfArticlePending;
     mapping(bytes32 => ArticleState) stateOfArticle;
 
@@ -94,6 +98,10 @@ contract DecentNews {
         }
     }
 
+
+    function calculateReward() public {
+
+    }
 
     //Will be replaced with Chainlink
      function randomNumber(uint _modulus) internal virtual returns (uint) {
