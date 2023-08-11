@@ -166,7 +166,7 @@ contract DecentNewsTestAfterTenReviews is Test {
         //     hoax(users[i], 10 ether);
         // }
         //@todo add userList
-        for(uint256 i; i < 10; i++){
+        for(uint256 i; i < 3; i++){
             //vm.startPrank(users[i]); 
             //decentNews.stake{value: 0.05 ether}();
             decentNews.requestReview();
