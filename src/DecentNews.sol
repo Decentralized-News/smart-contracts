@@ -75,7 +75,7 @@ contract DecentNews is Ownable {
         require(assignedArticleReviewer[msg.sender] == bytes32(0), "User already has review assigned");
         require(pendingArticles.length > 0, "No article available for review");
         //requestRandomNumber
-        uint256 maxNumber = pendingArticles.length - 1; //0 - maxNumber = randomNumber
+        uint256 maxNumber = pendingArticles.length; //0 - maxNumber = randomNumber
         uint256 indexOfRandomArticle = randomNumber(maxNumber);
         assignedArticleReviewer[msg.sender] = pendingArticles[indexOfRandomArticle];
 
