@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract DecentNews is Ownable {
-    mapping(address => bool) isApproved; //User allowed to publish article
+    mapping(address => bool) public isApproved; //User allowed to publish article
     mapping(address => bytes32[]) articlesReviewed;
     mapping(address => bytes32[]) articlesCreated;
 
@@ -60,7 +60,7 @@ contract DecentNews is Ownable {
     }
 
     function createArticle(bytes32 _hash) external {
-        require(isApproved[msg.sender], "User not allowed to create Articles");
+        require(isApproved[msg.sender], "User not allowed to create articles");
        
         articleCreator[_hash] = msg.sender;
         stateOfArticle[_hash] = ArticleState.Pending;
@@ -71,9 +71,9 @@ contract DecentNews is Ownable {
     }
 
     function requestReview() external {
-        require(isApproved[msg.sender], "User not allowed to review Articles");
+        require(isApproved[msg.sender], "User not allowed to review articles");
         require(assignedArticleReviewer[msg.sender] == bytes32(0), "User already has review assigned");
-
+        require(pendingArticles.length > 0, "No article available for review");
         //requestRandomNumber
         uint256 maxNumber = pendingArticles.length - 1; //0 - maxNumber = randomNumber
         uint256 indexOfRandomArticle = randomNumber(maxNumber);
@@ -84,7 +84,7 @@ contract DecentNews is Ownable {
 
     //assign 
     function submitVote(bool validArticle) external {
-        require(assignedArticleReviewer[msg.sender] != bytes32(0), "No article for review assigned");
+        require(assignedArticleReviewer[msg.sender] != bytes32(0), "No article assigned");
         //If article has max amount of reviews abord
         bytes32 assignedArticle = assignedArticleReviewer[msg.sender];
         if(articleReviewState[assignedArticle].finished){
@@ -117,7 +117,7 @@ contract DecentNews is Ownable {
         }
     }
 
-    function calculateReward() external {
+    function calculateReward() public {
         // Initialize rewards as 0
         int256 rewards = 0;
 
@@ -189,7 +189,7 @@ contract DecentNews is Ownable {
     }
 
     function checkIfWithdrawAllowed() internal view returns (bool) {
-        if(articlesReviewed[msg.sender].length == 0 && articlesCreated[msg.sender].length ==0, "review pending withdraw not possible"){
+        if(articlesReviewed[msg.sender].length == 0 && articlesCreated[msg.sender].length == 0){
             return true;
         }
         return false;
