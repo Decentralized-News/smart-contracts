@@ -268,7 +268,6 @@ function withdraw(uint256 _amount) external {
 
      /**
      * @dev Request random words from Chainlink VRF.
-     * @param _maxNumber The max number of random words.
      * @return requestId The request ID of the random words request.
      */
     function requestRandomWords(uint _modulus)
