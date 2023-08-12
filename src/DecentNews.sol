@@ -11,7 +11,7 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
  * @dev A contract for dezentralized publishing and reviewing articles.
  *      Utilizes Chainlink VRF for random selection in reviews.
  */
-contract DecentNews is VRFConsumerBaseV2 {
+contract DecentNews is VRFConsumerBaseV2, Ownable {
      // Chainlink related Variables
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId = 4463;
