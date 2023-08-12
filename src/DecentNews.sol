@@ -5,8 +5,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
+
+/**
+ * @title DecentNews
+ * @dev A contract for dezentralized publishing and reviewing articles.
+ *      Utilizes Chainlink VRF for random selection in reviews.
+ */
 contract DecentNews is VRFConsumerBaseV2 {
-    //Chainlink
+     // Chainlink related Variables
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId = 4463;
     uint256[] public requestIds;
@@ -25,6 +31,7 @@ contract DecentNews is VRFConsumerBaseV2 {
     
     mapping(uint256 => RequestStatus) public s_requests;
     
+    //Users
     mapping(address => bool) public isApproved; //User allowed to publish article
     mapping(address => bytes32[]) articlesReviewed;
     mapping(address => bytes32[]) articlesCreated;
@@ -42,7 +49,7 @@ contract DecentNews is VRFConsumerBaseV2 {
     mapping(address => int256) public userFunds;
     bytes32[] public pendingArticles;
 
-    //MVP Earnings set
+    //Earnings set (MVP)
     int256 earningsPerApprovedArticle = 0.01 ether;
     int256 earningsPerCorrectReview = -0.001 ether;
     int256 reductionPerDeclinedArticle = 0.01 ether;
@@ -68,7 +75,7 @@ contract DecentNews is VRFConsumerBaseV2 {
         Rejected
     }
 
-    //Approved articles saved in Events
+    //Events
     event articleApproved(bytes32 hash);
     // event articleCreated(bytes32 hash);
     // event reviewAssigned(address indexed reviewee, bytes32 hash);
@@ -82,6 +89,10 @@ contract DecentNews is VRFConsumerBaseV2 {
         );
     }
 
+     /**
+     * @dev Function to create an article.
+     * @param _hash The hash of the article.
+     */
     function createArticle(bytes32 _hash) external {
        //require(isApproved[msg.sender], "User not allowed to create articles");
        
@@ -93,13 +104,15 @@ contract DecentNews is VRFConsumerBaseV2 {
         // emit articleCreated(_hash);
     }
 
+    /**
+     * @dev Function to request review of an article.
+     */
     function requestReview() external {
        // require(isApproved[msg.sender], "User not allowed to review articles");
         require(assignedArticleReviewer[msg.sender] == bytes32(0), "User already has review assigned");
         require(pendingArticles.length > 0, "No article available for review");
-        //requestRandomNumber
         uint256 maxNumber = pendingArticles.length; //0 - maxNumber = randomNumber
-       //chainlink getRandomNumber
+       //chainlink requestRandomNumber
         uint256 indexOfRandomArticle = requestRandomWords(maxNumber);
         if(indexOfRandomArticle > 0) indexOfRandomArticle --;
         assignedArticleReviewer[msg.sender] = pendingArticles[indexOfRandomArticle];
@@ -107,7 +120,10 @@ contract DecentNews is VRFConsumerBaseV2 {
         // emit reviewAssigned(msg.sender, pendingArticles[indexOfRandomArticle]);
     }
 
-    //assign 
+    /**
+     * @dev Function to submit vote for review.
+     * @param validArticle indicates if the article is valid.
+     */
     function submitVote(bool validArticle) external {
         require(assignedArticleReviewer[msg.sender] != bytes32(0), "No article assigned");
         //If article has max amount of reviews abord
@@ -129,25 +145,10 @@ contract DecentNews is VRFConsumerBaseV2 {
     }
 
 
-    function finalizeVoting(bytes32 _hash) internal {
-        articleReviewState[_hash].finished = true;
-        // Delete from pending Reviews
-        uint256 indexHash = indexOfArticlePending[_hash];
-        if(pendingArticles.length > 1){
-            pendingArticles[indexHash] = pendingArticles[pendingArticles.length - 1];
-        }
-        pendingArticles.pop();
-        
-        if(articleReviewState[_hash].score > minimumScoreToApprove){
-            emit articleApproved(_hash);
-            stateOfArticle[_hash] = ArticleState.Approved;
-            articleReviewState[_hash].result = true;
-        }else{
-            stateOfArticle[_hash] = ArticleState.Approved;
-            articleReviewState[_hash].result = false;
-        }
-    }
 
+    /**
+     * @dev Function to calculate rewards for a user.
+     */
     function calculateReward() public {
         // Initialize rewards as 0
         int256 rewards = 0;
@@ -210,21 +211,52 @@ function withdraw(uint256 _amount) external {
     // Transfer the requested amount to the user
     payable(msg.sender).transfer(_amount);
 
-    // Optionally, you can emit an event to log the withdrawal
     // emit Withdrawal(msg.sender, _amount);
 }
 
 
     function stake() external payable{
         require(msg.value > amountNeededToParticipate, "Not enough funds");
-        //@todo Overflow??
+        //@todo overflow??
         userFunds[msg.sender] += int256(msg.value);
         isApproved[msg.sender] = true;
     }
     
-    function getAssignedArticle(address _user) public view returns (bytes32){
+    function getAssignedArticle(address _user) external view returns (bytes32){
         return assignedArticleReviewer[_user];
     }
+
+    function getRequestStatus(
+        uint256 _requestId
+    ) external view returns (bool fulfilled, uint256[] memory randomWords) {
+        require(s_requests[_requestId].exists, "request not found");
+        RequestStatus memory request = s_requests[_requestId];
+        return (request.fulfilled, request.randomWords);
+    }
+
+    /**
+     * @dev Internal function to finalize voting.
+     * @param _hash The hash of the article.
+     */
+    function finalizeVoting(bytes32 _hash) internal {
+        articleReviewState[_hash].finished = true;
+        // Delete from pending Reviews
+        uint256 indexHash = indexOfArticlePending[_hash];
+        if(pendingArticles.length > 1){
+            pendingArticles[indexHash] = pendingArticles[pendingArticles.length - 1];
+        }
+        pendingArticles.pop();
+        
+        if(articleReviewState[_hash].score > minimumScoreToApprove){
+            emit articleApproved(_hash);
+            stateOfArticle[_hash] = ArticleState.Approved;
+            articleReviewState[_hash].result = true;
+        }else{
+            stateOfArticle[_hash] = ArticleState.Approved;
+            articleReviewState[_hash].result = false;
+        }
+    }
+
     function checkIfWithdrawAllowed() internal view returns (bool) {
         if(articlesReviewed[msg.sender].length == 0 && articlesCreated[msg.sender].length == 0){
             return true;
@@ -232,8 +264,13 @@ function withdraw(uint256 _amount) external {
         return false;
 
     }
+    
 
-    //Will be replaced with Chainlink
+     /**
+     * @dev Request random words from Chainlink VRF.
+     * @param _maxNumber The max number of random words.
+     * @return requestId The request ID of the random words request.
+     */
     function requestRandomWords(uint _modulus)
         internal
         returns (uint256 requestId)
@@ -253,7 +290,7 @@ function withdraw(uint256 _amount) external {
         });
         requestIds.push(requestId);
         lastRequestId = requestId;
-        return requestIds[0] % _modulus;
+        return requestId % _modulus;
     }
 
     function fulfillRandomWords(
@@ -263,13 +300,5 @@ function withdraw(uint256 _amount) external {
         require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
         s_requests[_requestId].randomWords = _randomWords;
-    }
-
-    function getRequestStatus(
-        uint256 _requestId
-    ) external view returns (bool fulfilled, uint256[] memory randomWords) {
-        require(s_requests[_requestId].exists, "request not found");
-        RequestStatus memory request = s_requests[_requestId];
-        return (request.fulfilled, request.randomWords);
     }
 }
