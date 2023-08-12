@@ -102,7 +102,7 @@ abstract contract Ownable is Context {
     }
 }
 
-contract DecentNews is Ownable {
+contract DecentNewsFlattende is Ownable {
     mapping(address => bool) public isApproved; //User allowed to publish article
     mapping(address => bytes32[]) articlesReviewed;
     mapping(address => bytes32[]) articlesCreated;
@@ -148,10 +148,10 @@ contract DecentNews is Ownable {
 
     //Approved articles saved in Events
     event articleApproved(bytes32 hash);
-    event articleCreated(bytes32 hash);
-    event reviewAssigned(address indexed reviewee, bytes32 hash);
-    event rewardsCalculated(address indexed reviewee, int256 amount);
-    event Withdrawal(address indexed reviewee, uint256 amount);
+    // event articleCreated(bytes32 hash);
+    // event reviewAssigned(address indexed reviewee, bytes32 hash);
+    // event rewardsCalculated(address indexed reviewee, int256 amount);
+    // event Withdrawal(address indexed reviewee, uint256 amount);
    
     //MVP everything already set
     constructor() payable {
@@ -166,7 +166,7 @@ contract DecentNews is Ownable {
 
         indexOfArticlePending[_hash] = pendingArticles.length;
         pendingArticles.push(_hash);
-        emit articleCreated(_hash);
+        // emit articleCreated(_hash);
     }
 
     function requestReview() external {
@@ -179,7 +179,7 @@ contract DecentNews is Ownable {
         if(indexOfRandomArticle > 0) indexOfRandomArticle --;
         assignedArticleReviewer[msg.sender] = pendingArticles[indexOfRandomArticle];
 
-        emit reviewAssigned(msg.sender, pendingArticles[indexOfRandomArticle]);
+        // emit reviewAssigned(msg.sender, pendingArticles[indexOfRandomArticle]);
     }
 
     //assign 
@@ -263,7 +263,7 @@ contract DecentNews is Ownable {
         }
         userFunds[msg.sender] += rewards;
         // Emit an event with the calculated rewards (assuming you have this event defined)
-        emit rewardsCalculated(msg.sender, rewards);
+        // emit rewardsCalculated(msg.sender, rewards);
     }
 
 function withdraw(uint256 _amount) external {
@@ -285,7 +285,7 @@ function withdraw(uint256 _amount) external {
     payable(msg.sender).transfer(_amount);
 
     // Optionally, you can emit an event to log the withdrawal
-    emit Withdrawal(msg.sender, _amount);
+    // emit Withdrawal(msg.sender, _amount);
 }
 
     function stake() external payable{
